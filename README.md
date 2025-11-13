@@ -11,15 +11,15 @@ Features
 - Transcript saving to `transcripts/`
 
 Install (Option A: GitHub, no npm account)
-- Global (from GitHub): `npm i -g github:your-username/vibe-cli`
-- One-off run: `npx github:your-username/vibe-cli`
+- Global (from GitHub): `npm i -g github:mk-knight23/vibe-cli`
+- One-off run: `npx github:mk-knight23/vibe-cli`
 
 Install (Option B: Prebuilt binaries via Releases)
 - macOS/Linux quick install:
   - `curl -fsSL https://raw.githubusercontent.com/your-username/vibe-cli/main/install.sh | bash`
 - Windows: download the latest Release asset `vibe-win-x64.exe` and run it
 
-Note: replace `your-username/vibe-cli` with your actual GitHub repo path.
+
 
 Usage
 
@@ -53,5 +53,5 @@ License
 MIT
 
 Repository
-https://github.com/yourname/vibe-cli
+https://github.com/mk-knight23/vibe-cli
 # vibe-cli
