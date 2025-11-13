@@ -452,6 +452,7 @@ async function startChat(apiKey, initialModel) {
 }
 
 function printAsciiWelcome() {
+  if (process.env.VIBE_NO_BANNER === '1' || !process.stdout.isTTY) return;
   try {
     const os = require('os');
     const username = (os.userInfo && os.userInfo().username) || process.env.USER || process.env.USERNAME || 'User';
@@ -477,6 +478,10 @@ function printAsciiWelcome() {
     } catch {}
 
     const cwd = process.cwd();
+    const fit = (s, n) => {
+      const str = String(s);
+      return str.length > n ? str.slice(0, n-1) + '…' : str.padEnd(n);
+    };
 
     const box = String.raw`╭─── Vibe-CLI ${version} ────────────────────────────────────────────────────────────────╮
 │                                   │ Tips for getting started                    │
@@ -485,10 +490,10 @@ function printAsciiWelcome() {
 │   ▐▛███▜▌                          │ - /save [name] to save a transcript        │
 │  ▝▜█████▛▘ ← Initializing…         │ ─────────────────────────────────────────── │
 │    ▘▘ ▝▝   ← Boot Sequence OK      │ Recent activity                             │
-│                                   │ ${recent.padEnd(41)} │
+│                                   │ ${fit(recent,41)} │
 │                                   │                                              │
 │   Vibe AI · Free Model Access     │                                              │
-│       ${cwd.padEnd(42)} │
+│       ${fit(cwd,42)} │
 ╰───────────────────────────────────────────────────────────────────────────────────╯`;
 
     console.log('\n' + pc.cyan(box) + '\n');
