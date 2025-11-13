@@ -133,9 +133,37 @@ async function main(argv) {
       }
       break;
     }
+    case 'config': {
+      const sub = args[0];
+      const keyPath = args[1];
+      const value = args[2];
+      const cfgRef = cfg;
+      const getByPath = (obj, p) => p.split('.').reduce((o,k)=> (o||{})[k], obj);
+      const setByPath = (obj, p, val) => { const ks=p.split('.'); let cur=obj; ks.forEach((k,i)=>{ if(i===ks.length-1){ cur[k]=val; } else { cur[k]=cur[k]||{}; cur=cur[k]; } }); };
+      if (sub === 'get') {
+        if (!keyPath) return console.log('Usage: vibe config get <path>');
+        console.log(getByPath(cfgRef, keyPath));
+      } else if (sub === 'set') {
+        if (!keyPath) return console.log('Usage: vibe config set <path> <value>');
+        setByPath(cfgRef, keyPath, value);
+        saveConfig(cfgRef);
+        console.log(pc.green(`Set ${keyPath}`));
+      } else {
+        console.log('Usage: vibe config get|set <path> [value]');
+      }
+      break;
+    }
     case 'chat': {
-      // Fallback to legacy cli
-      require('../cli.cjs');
+      const text = args.join(' ').trim();
+      const { defaultModel } = getModelDefaults();
+      if (text) {
+        const messages = [ { role: 'user', content: text } ];
+        chatCompletion({ model: defaultModel, messages }).then(r=>{
+          console.log(r.message?.content || '');
+        }).catch(e=>console.error('Chat error:', e.message));
+      } else {
+        console.log('Tip: pass a message, e.g., vibe chat "Hello"');
+      }
       break;
     }
     default:
