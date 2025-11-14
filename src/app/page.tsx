@@ -5,27 +5,27 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "@/components/ui/accordion";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+} from "../components/ui/accordion";
+import { Button } from "../components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
 import {
   Carousel,
   CarouselContent,
   CarouselItem,
   CarouselNext,
   CarouselPrevious,
-} from "@/components/ui/carousel";
+} from "../components/ui/carousel";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from "@/components/ui/tabs";
+} from "../components/ui/tabs";
 import { ArrowRight, CheckCircle2, FileTerminal, GitMerge, ShieldCheck, Shuffle } from "lucide-react";
 
-import CodeBlock from "@/components/code-block";
-import QuickStartSection from "@/components/quick-start-section";
-import { PlaceHolderImages } from "@/lib/placeholder-images";
+import CodeBlock from "../components/code-block";
+import QuickStartSection from "../components/quick-start-section";
+import { PlaceHolderImages } from "../lib/placeholder-images";
 
 const testimonialAuthorImage = PlaceHolderImages.find(p => p.id === 'testimonial-author');
 

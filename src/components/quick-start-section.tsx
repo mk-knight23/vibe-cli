@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from 'react';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Progress } from '@/components/ui/progress';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
+import { Progress } from './ui/progress';
 import CodeBlock from './code-block';
 
 const items = [
