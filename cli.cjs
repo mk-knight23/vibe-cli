@@ -11,6 +11,7 @@ const oraModule = require('ora');
 const ora = oraModule.default || oraModule;
 const { exec } = require('child_process');
 const { webSearch, webFetchDocs } = require('./tools.cjs');
+const { getApiKey } = require('./lib/apikey.cjs');
 const fg = require('fast-glob');
 
 // HTTP helpers using native fetch with timeout and axios-compatible errors
@@ -53,21 +54,6 @@ const TRANSCRIPTS_DIR = path.join(process.cwd(), 'transcripts');
 // Defaults requested by user
 const DEFAULT_MODEL_ID = 'z-ai/glm-4.5-air:free';
 const DEFAULT_SYSTEM_PROMPT = 'You are an interactive CLI assistant for software engineering. Be concise and direct. Only assist with defensive security tasks; refuse to create, modify, or improve code that may be used maliciously. Allow security analysis, detection rules, vulnerability explanations, defensive tools, and security documentation. Never guess URLs; only use user-provided or known programming docs URLs. Minimize output.';
-
-async function getApiKey() {
-  const envKey = process.env.OPENROUTER_API_KEY;
-  if (envKey) return String(envKey).trim();
-  const { apiKey } = await inquirer.prompt([
-    {
-      type: 'password',
-      name: 'apiKey',
-      message: 'Enter your OpenRouter API key:',
-      mask: '*',
-      validate: (v) => (v && v.trim().length > 0) || 'API key is required',
-    },
-  ]);
-  return (apiKey || '').trim();
-}
 
 function isFreeModel(model) {
   try {
@@ -164,16 +150,19 @@ function saveTranscript(filename, messages) {
 }
 
 function printHelp() {
-  console.log(pc.cyan('\nCommands (Claude Code-like):'));
+  console.log(pc.cyan('\nCommands (Enhanced Claude Code-like):'));
   console.log('  ' + pc.yellow('/help') + '                 Show this help');
   console.log('  ' + pc.yellow('/models') + '               List and select from free models');
   console.log('  ' + pc.yellow('/model') + '                Change the current model (opens picker)');
   console.log('  ' + pc.yellow('/system') + '               Edit system prompt');
   console.log('  ' + pc.yellow('/clear') + '                Clear chat context');
   console.log('  ' + pc.yellow('/save [name]') + '         Save transcript to transcripts/');
+  console.log('  ' + pc.yellow('/export [format]') + '      Export session (json|txt|md)');
+  console.log('  ' + pc.yellow('/context') + '              Show context info and token usage');
   console.log('  ' + pc.yellow('/search <q>') + '          Web search and inject context');
   console.log('  ' + pc.yellow('/docs <page>') + '          OpenRouter docs: quick-start | models | api-reference | sdks | guides | errors | authentication | rate-limits');
   console.log('  ' + pc.yellow('/run <cmd>') + '            Execute a shell command and inject output');
+  console.log('  ' + pc.yellow('/execute <code>') + '       Execute code block and inject result');
   console.log('  ' + pc.yellow('/open <glob>') + '          Read files by glob and inject their contents');
   console.log('  ' + pc.yellow('/files') + '                Show project files');
   console.log('  ' + pc.yellow('/write <path>') + '         Create/overwrite a file via editor');
@@ -181,15 +170,26 @@ function printHelp() {
   console.log('  ' + pc.yellow('/append <path>') + '        Append to a file via editor');
   console.log('  ' + pc.yellow('/move <src> <dst>') + '     Move/rename a file');
   console.log('  ' + pc.yellow('/delete <path|glob>') + '   Delete file(s)');
+  console.log('  ' + pc.yellow('/generate <prompt>') + '    Generate code using AI');
+  console.log('  ' + pc.yellow('/complete <file>') + '      Get code completion suggestions');
+  console.log('  ' + pc.yellow('/refactor <pattern>') + '   Refactor code with AI assistance');
+  console.log('  ' + pc.yellow('/debug <error>') + '        Debug errors and issues');
+  console.log('  ' + pc.yellow('/test <file>') + '          Generate tests for code');
+  console.log('  ' + pc.yellow('/review <file>') + '        Review code for issues');
+  console.log('  ' + pc.yellow('/git <cmd>') + '            Git operations with AI assistance');
+  console.log('  ' + pc.yellow('/agent <task>') + '         Run autonomous agent task');
   console.log('  ' + pc.yellow('/feedback') + '            Report issues: https://github.com/user/vibe-cli/issues');
   console.log('  ' + pc.yellow('/multiline') + '           Toggle multiline editor mode');
   console.log('  ' + pc.yellow('/exit') + '                 Quit');
 }
 
-async function startChat(apiKey, initialModel) {
+async function startChat(initialModel) {
   let model = initialModel || DEFAULT_MODEL_ID;
   console.log(pc.green(`\nStarting chat with model: ${model}`));
   console.log('Type ' + pc.yellow('"/help"') + ' for available commands.');
+
+  // Get API key using centralized management
+  const apiKey = await getApiKey();
 
   const tools = setupToolAccess();
   const messages = [
@@ -247,6 +247,57 @@ async function startChat(apiKey, initialModel) {
     if (lower === '/exit') {
       console.log(pc.gray('Goodbye!'));
       break;
+    }
+
+    if (lower === '/context') {
+      const tokenCount = messages.reduce((acc, msg) => acc + msg.content.length, 0);
+      console.log(pc.cyan('\n=== Context Info ==='));
+      console.log(`Messages: ${messages.length}`);
+      console.log(`Approx tokens: ${Math.ceil(tokenCount / 4)}`);
+      console.log(`Current model: ${model}`);
+      console.log(`Multiline mode: ${multiline ? 'ON' : 'OFF'}`);
+      continue;
+    }
+
+    if (lower.startsWith('/export')) {
+      const format = trimmed.split(' ')[1] || 'txt';
+      const filename = `session_${new Date().toISOString().replace(/[:.]/g, '-')}.${format}`;
+      const file = path.join(TRANSCRIPTS_DIR, filename);
+      
+      let content;
+      if (format === 'json') {
+        content = JSON.stringify(messages, null, 2);
+      } else if (format === 'md') {
+        content = messages.map(m => `**${m.role.toUpperCase()}:**\n\n${m.content}`).join('\n\n---\n\n');
+      } else {
+        content = messages.map(m => `[${m.role}] ${m.content}`).join('\n\n');
+      }
+      
+      ensureDir(TRANSCRIPTS_DIR);
+      fs.writeFileSync(file, content, 'utf8');
+      console.log(pc.green(`Session exported to: ${file}`));
+      continue;
+    }
+
+    if (lower.startsWith('/execute ')) {
+      const code = norm.slice(9).trim();
+      if (!code) { console.log('Usage: /execute <code>'); continue; }
+      
+      console.log(pc.gray(`Executing code: ${code}`));
+      try {
+        const result = await new Promise((resolve, reject) => {
+          exec(code, { maxBuffer: 1024 * 1024 }, (err, stdout, stderr) => {
+            if (err) reject(err);
+            else resolve(stdout || stderr || '(no output)');
+          });
+        });
+        const injected = `Code execution result for "${code}":\n${result}`;
+        messages.push({ role: 'system', content: injected });
+        console.log(pc.gray('(Code execution result injected into context)'));
+      } catch (e) {
+        console.error(pc.red('Code execution failed:'), e.message);
+      }
+      continue;
     }
 
     if (lower === '/tools') {
@@ -441,6 +492,171 @@ async function startChat(apiKey, initialModel) {
       continue;
     }
 
+    // Enhanced commands integration
+    if (lower.startsWith('/generate ')) {
+      const prompt = norm.slice(10).trim();
+      if (!prompt) { console.log('Usage: /generate <prompt>'); continue; }
+      
+      console.log(pc.cyan('Generating code...'));
+      try {
+        const { generateCode } = require('./lib/codegen.cjs');
+        const result = await generateCode(prompt);
+        console.log(pc.green(`Generated ${result.language} code:`));
+        console.log(result.code);
+        
+        const injected = `Generated code:\n\`\`\`${result.language}\n${result.code}\n\`\`\``;
+        messages.push({ role: 'system', content: injected });
+      } catch (e) {
+        console.error(pc.red('Code generation failed:'), e.message);
+      }
+      continue;
+    }
+
+    if (lower.startsWith('/complete ')) {
+      const filePath = norm.slice(10).trim();
+      if (!filePath) { console.log('Usage: /complete <file>'); continue; }
+      
+      if (!fs.existsSync(filePath)) {
+        console.error(pc.red(`File not found: ${filePath}`));
+        continue;
+      }
+      
+      console.log(pc.cyan(`Getting completion for: ${filePath}`));
+      try {
+        const { generateCompletion } = require('./lib/codegen.cjs');
+        const result = await generateCompletion(filePath);
+        console.log(pc.green(`Found ${result.suggestions.length} suggestions:`));
+        result.suggestions.forEach((suggestion, index) => {
+          console.log(`\n${pc.cyan(`Suggestion ${index + 1}:`)}`);
+          console.log(suggestion);
+        });
+      } catch (e) {
+        console.error(pc.red('Code completion failed:'), e.message);
+      }
+      continue;
+    }
+
+    if (lower.startsWith('/refactor ')) {
+      const pattern = norm.slice(10).trim();
+      if (!pattern) { console.log('Usage: /refactor <pattern>'); continue; }
+      
+      console.log(pc.cyan(`Refactoring: ${pattern}`));
+      try {
+        const { quickRefactor } = require('./lib/refactor.cjs');
+        const result = await quickRefactor(pattern, 'clean');
+        if (result.success) {
+          console.log(pc.green('Refactoring completed successfully!'));
+        } else {
+          console.log(pc.yellow(result.message));
+        }
+      } catch (e) {
+        console.error(pc.red('Refactoring failed:'), e.message);
+      }
+      continue;
+    }
+
+    if (lower.startsWith('/debug ')) {
+      const error = norm.slice(7).trim();
+      if (!error) { console.log('Usage: /debug <error-message|file>'); continue; }
+      
+      console.log(pc.cyan('Debugging...'));
+      try {
+        const { quickDebug } = require('./lib/debug.cjs');
+        const result = await quickDebug(error);
+        console.log(pc.green('Debug analysis completed'));
+      } catch (e) {
+        console.error(pc.red('Debug analysis failed:'), e.message);
+      }
+      continue;
+    }
+
+    if (lower.startsWith('/test ')) {
+      const filePath = norm.slice(6).trim();
+      if (!filePath) { console.log('Usage: /test <file>'); continue; }
+      
+      console.log(pc.cyan(`Generating tests for: ${filePath}`));
+      try {
+        const { quickTestGeneration } = require('./lib/testgen.cjs');
+        const result = await quickTestGeneration(filePath);
+        console.log(pc.green('Test generation completed'));
+      } catch (e) {
+        console.error(pc.red('Test generation failed:'), e.message);
+      }
+      continue;
+    }
+
+    if (lower.startsWith('/review ')) {
+      const target = norm.slice(9).trim();
+      if (!target) { console.log('Usage: /review <file|git>'); continue; }
+      
+      console.log(pc.cyan(`Reviewing: ${target}`));
+      try {
+        const { reviewChanges } = require('./lib/gittools.cjs');
+        const result = await reviewChanges({
+          file: target === 'git' ? null : target,
+          focus: 'all'
+        });
+        if (result.success) {
+          console.log(pc.green('Code review completed'));
+        }
+      } catch (e) {
+        console.error(pc.red('Code review failed:'), e.message);
+      }
+      continue;
+    }
+
+    if (lower.startsWith('/git ')) {
+      const gitCmd = norm.slice(5).trim();
+      if (!gitCmd) { console.log('Usage: /git <commit|review|pr|status>'); continue; }
+      
+      console.log(pc.cyan(`Git operation: ${gitCmd}`));
+      try {
+        const { smartCommit, reviewChanges, createPR, smartStatus } = require('./lib/gittools.cjs');
+        
+        if (gitCmd.startsWith('commit')) {
+          const result = await smartCommit({ addAll: true });
+          if (result.success) {
+            console.log(pc.green(`Committed: ${result.message}`));
+          }
+        } else if (gitCmd.startsWith('review')) {
+          const result = await reviewChanges({ focus: 'all' });
+          if (result.success) {
+            console.log(pc.green('Git review completed'));
+          }
+        } else if (gitCmd.startsWith('pr')) {
+          const result = await createPR({ dryRun: true });
+          if (result.success) {
+            console.log(pc.green('PR description generated'));
+          }
+        } else if (gitCmd.startsWith('status')) {
+          const result = await smartStatus({ includeSuggestions: true });
+          console.log(pc.green(`Git status: ${result.branch}`));
+        }
+      } catch (e) {
+        console.error(pc.red('Git operation failed:'), e.message);
+      }
+      continue;
+    }
+
+    if (lower.startsWith('/agent ')) {
+      const task = norm.slice(7).trim();
+      if (!task) { console.log('Usage: /agent <task>'); continue; }
+      
+      console.log(pc.cyan(`Running agent task: ${task}`));
+      try {
+        const { runAutonomousAgent } = require('./lib/agent.cjs');
+        const result = await runAutonomousAgent(task, { auto: false });
+        if (result.success) {
+          console.log(pc.green('Agent task completed successfully!'));
+        } else {
+          console.log(pc.yellow('Agent task completed with issues'));
+        }
+      } catch (e) {
+        console.error(pc.red('Agent task failed:'), e.message);
+      }
+      continue;
+    }
+
     // Regular user message
     if (isDisallowedSecurityRequest(trimmed)) {
       console.log(pc.red('Refusing: only defensive security assistance is allowed. You can ask for analysis, detection rules, or defensive guidance.'));
@@ -538,16 +754,16 @@ function printAsciiWelcome() {
 async function main() {
   try {
     printAsciiWelcome();
-    const apiKey = await getApiKey();
     let selectedModel = DEFAULT_MODEL_ID;
     try {
+      const apiKey = await getApiKey();
       const models = await fetchModels(apiKey);
       selectedModel = (models.find(m => (m.id||m.slug||m.name) === DEFAULT_MODEL_ID)?.id) || (await selectModel(models));
     } catch (e) {
       // If fetching free models fails, continue with default model
       selectedModel = DEFAULT_MODEL_ID;
     }
-    await startChat(apiKey, selectedModel);
+    await startChat(selectedModel);
   } catch (e) {
     console.error('Fatal:', e?.message || e);
     process.exitCode = 1;
@@ -558,4 +774,4 @@ if (require.main === module) {
   main();
 }
 
-module.exports = { getApiKey, fetchModels, selectModel, startChat, setupToolAccess };
+module.exports = { fetchModels, selectModel, startChat, setupToolAccess };

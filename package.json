@@ -1,7 +1,7 @@
 {
   "name": "vibe-cli",
   "private": false,
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "CLI to chat with OpenRouter free models and Claude Code–style tooling.",
   "keywords": [
     "openrouter",
@@ -28,6 +28,13 @@
     "bin/vibe.cjs",
     "lib/openrouter.cjs",
     "lib/agent.cjs",
+    "lib/codegen.cjs",
+    "lib/multiedit.cjs",
+    "lib/refactor.cjs",
+    "lib/debug.cjs",
+    "lib/testgen.cjs",
+    "lib/gittools.cjs",
+    "lib/apikey.cjs",
     "plugins/",
     "themes/",
     "sessions/",
