@@ -20,7 +20,7 @@ A free, privacy‑first AI coding assistant focused on terminal‑centric workfl
 - Automated build & publish pipeline (GitHub Actions)
 - Documentation consolidation finalized (removed stale STRUCTURE.md reference in package distribution list)
 - License attribution corrected to mk-knight23
-
+- Dependency pruning: removed unused axios, chalk, conf, fs-extra, fuse.js, marked, sharp, xterm, xterm-addon-fit; replaced with native fetch + picocolors
 See consolidated changelog summary below.
 
 ## 3. Installation
@@ -145,7 +145,7 @@ graph TB
 CLI:
 - Node.js ≥ 18
 - CommonJS modules with potential TypeScript migration plan
-- simple-git, axios/node-fetch, chalk, ora, inquirer
+- simple-git, native fetch (node-fetch fallback), picocolors (replaces chalk), ora, inquirer
 
 Web:
 - Next.js App Router
