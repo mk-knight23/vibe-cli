@@ -87,13 +87,15 @@ jobs:
         tag_name: ${{ github.ref }}
         release_name: Release ${{ github.ref }}
         body: |
-          ## VIbe CLI v1.0.5
+          ## Vibe CLI v1.0.6
           
           ### What's New
-          - Enhanced AI agent capabilities
-          - Multiple specialized tools (codegen, debug, refactor, testgen, gittools)
-          - Improved OpenRouter integration
-          - Better API key management
+          - Enhanced AI agent capabilities (improved step/context management)
+          - Specialized tools (codegen, debug, refactor, testgen, gittools, multiedit)
+          - Improved OpenRouter integration & model selection
+          - Better API key management flow
+          - Documentation consolidation (removed legacy STRUCTURE.md distribution entry)
+          - License attribution corrected to mk-knight23
           
           ### Installation
           ```bash
@@ -113,6 +115,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./vibe-cli-1.0.5.tgz
-        asset_name: vibe-cli-1.0.5.tgz
+        asset_path: ./vibe-cli-1.0.6.tgz
+        asset_name: vibe-cli-1.0.6.tgz
         asset_content_type: application/gzip

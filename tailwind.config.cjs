@@ -5,9 +5,6 @@ module.exports = {
     './src/components/ui/**/*.{ts,tsx,js,jsx}',
     './src/hooks/**/*.{ts,tsx,js,jsx}',
     './src/lib/**/*.{ts,tsx,js,jsx}',
-    // Legacy (temporary)
-    './legacy/pages/**/*.{js,jsx,ts,tsx}',
-    './legacy/components/**/*.{js,jsx,ts,tsx}',
   ],
   theme: {
     extend: {

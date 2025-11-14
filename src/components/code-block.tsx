@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Check, Copy } from 'lucide-react';
 import { Button } from './ui/button';
 import { useToast } from '../hooks/use-toast';
-import { cn } from '../lib/utils';
+import { cn } from '../../core/utils';
 import {
   Tooltip,
   TooltipContent,

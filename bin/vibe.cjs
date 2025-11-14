@@ -1,13 +1,15 @@
 #!/usr/bin/env node
 /* Vibe Code CLI v2 command router */
-const { chatCompletion, getModelDefaults, loadConfig, saveConfig, encodeImageToDataUrl, listTopFreeModels, TOP_FREE_MODELS } = require('../lib/openrouter.cjs');
-const { plan, fix, saveSession, loadLatestSession, startWatcher, runAutonomousAgent } = require('../lib/agent.cjs');
-const { generateCode, generateFunction, saveCodeToFile, detectLanguage, interactiveCompletion, generateCompletion } = require('../lib/codegen.cjs');
-const { editFiles } = require('../lib/multiedit.cjs');
-const { interactiveRefactor, quickRefactor, REFACTOR_TYPES } = require('../lib/refactor.cjs');
-const { interactiveDebug, quickDebug, debugFromStdin } = require('../lib/debug.cjs');
-const { interactiveTestGeneration, quickTestGeneration, generateTestsForPattern, detectTestFramework } = require('../lib/testgen.cjs');
-const { smartCommit, createPR, reviewChanges, smartStatus, interactiveGitWorkflow } = require('../lib/gittools.cjs');
+/* Updated: migrated OpenRouter/core config requires to consolidated cli/core barrel */
+const { chatCompletion, getModelDefaults, loadConfig, saveConfig, encodeImageToDataUrl, listTopFreeModels, TOP_FREE_MODELS } = require('../cli/core/index.cjs');
+/* migrated agent module path */
+const { plan, fix, saveSession, loadLatestSession, startWatcher, runAutonomousAgent } = require('../cli/agent/agent.cjs');
+const { generateCode, generateFunction, saveCodeToFile, detectLanguage, interactiveCompletion, generateCompletion } = require('../cli/code/codegen.cjs');
+const { editFiles } = require('../cli/edit/multiedit.cjs');
+const { interactiveRefactor, quickRefactor, REFACTOR_TYPES } = require('../cli/refactor/refactor.cjs');
+const { interactiveDebug, quickDebug, debugFromStdin } = require('../cli/debug/debug.cjs');
+const { interactiveTestGeneration, quickTestGeneration, generateTestsForPattern, detectTestFramework } = require('../cli/test/testgen.cjs');
+const { smartCommit, createPR, reviewChanges, smartStatus, interactiveGitWorkflow } = require('../cli/git/gittools.cjs');
 const path = require('path');
 const fs = require('fs');
 const pc = require('picocolors');
@@ -198,7 +200,7 @@ async function main(argv) {
     }
     case 'run': {
       const yolo = args.includes('--yolo');
-      const res = await require('../lib/agent.cjs').runAutonomous({ yolo });
+      const res = await require('../cli/agent/agent.cjs').runAutonomous({ yolo });
       console.log(pc.gray(`Run status: ${res.status}`));
       break;
     }

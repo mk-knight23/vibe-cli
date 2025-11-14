@@ -11,7 +11,7 @@ const oraModule = require('ora');
 const ora = oraModule.default || oraModule;
 const { exec } = require('child_process');
 const { webSearch, webFetchDocs } = require('./tools.cjs');
-const { getApiKey } = require('./lib/apikey.cjs');
+const { getApiKey } = require('./cli/core/apikey.cjs');
 const fg = require('fast-glob');
 
 // HTTP helpers using native fetch with timeout and axios-compatible errors
@@ -499,7 +499,7 @@ async function startChat(initialModel) {
       
       console.log(pc.cyan('Generating code...'));
       try {
-        const { generateCode } = require('./lib/codegen.cjs');
+        const { generateCode } = require('./cli/code/codegen.cjs');
         const result = await generateCode(prompt);
         console.log(pc.green(`Generated ${result.language} code:`));
         console.log(result.code);
@@ -523,7 +523,7 @@ async function startChat(initialModel) {
       
       console.log(pc.cyan(`Getting completion for: ${filePath}`));
       try {
-        const { generateCompletion } = require('./lib/codegen.cjs');
+        const { generateCompletion } = require('./cli/code/codegen.cjs');
         const result = await generateCompletion(filePath);
         console.log(pc.green(`Found ${result.suggestions.length} suggestions:`));
         result.suggestions.forEach((suggestion, index) => {
@@ -542,7 +542,7 @@ async function startChat(initialModel) {
       
       console.log(pc.cyan(`Refactoring: ${pattern}`));
       try {
-        const { quickRefactor } = require('./lib/refactor.cjs');
+        const { quickRefactor } = require('./cli/refactor/refactor.cjs');
         const result = await quickRefactor(pattern, 'clean');
         if (result.success) {
           console.log(pc.green('Refactoring completed successfully!'));
@@ -561,7 +561,7 @@ async function startChat(initialModel) {
       
       console.log(pc.cyan('Debugging...'));
       try {
-        const { quickDebug } = require('./lib/debug.cjs');
+        const { quickDebug } = require('./cli/debug/debug.cjs');
         const result = await quickDebug(error);
         console.log(pc.green('Debug analysis completed'));
       } catch (e) {
@@ -576,7 +576,7 @@ async function startChat(initialModel) {
       
       console.log(pc.cyan(`Generating tests for: ${filePath}`));
       try {
-        const { quickTestGeneration } = require('./lib/testgen.cjs');
+        const { quickTestGeneration } = require('./cli/test/testgen.cjs');
         const result = await quickTestGeneration(filePath);
         console.log(pc.green('Test generation completed'));
       } catch (e) {
@@ -591,7 +591,7 @@ async function startChat(initialModel) {
       
       console.log(pc.cyan(`Reviewing: ${target}`));
       try {
-        const { reviewChanges } = require('./lib/gittools.cjs');
+        const { reviewChanges } = require('./cli/git/gittools.cjs');
         const result = await reviewChanges({
           file: target === 'git' ? null : target,
           focus: 'all'
@@ -611,7 +611,7 @@ async function startChat(initialModel) {
       
       console.log(pc.cyan(`Git operation: ${gitCmd}`));
       try {
-        const { smartCommit, reviewChanges, createPR, smartStatus } = require('./lib/gittools.cjs');
+        const { smartCommit, reviewChanges, createPR, smartStatus } = require('./cli/git/gittools.cjs');
         
         if (gitCmd.startsWith('commit')) {
           const result = await smartCommit({ addAll: true });
@@ -644,7 +644,7 @@ async function startChat(initialModel) {
       
       console.log(pc.cyan(`Running agent task: ${task}`));
       try {
-        const { runAutonomousAgent } = require('./lib/agent.cjs');
+        const { runAutonomousAgent } = require('./cli/agent/agent.cjs');
         const result = await runAutonomousAgent(task, { auto: false });
         if (result.success) {
           console.log(pc.green('Agent task completed successfully!'));
@@ -754,6 +754,20 @@ function printAsciiWelcome() {
 async function main() {
   try {
     printAsciiWelcome();
+
+    // Detect non-interactive terminal early and fail fast instead of hanging on inquirer prompts.
+    const NON_TTY = !process.stdout.isTTY || !process.stdin.isTTY || process.env.TERM === 'dumb';
+    if (NON_TTY) {
+      console.error(pc.red('Interactive terminal not detected (TERM=' + (process.env.TERM || '') + ').'));
+      console.error(pc.yellow('Fix your VSCode terminal:'));
+      console.error('- Open a new integrated terminal (Ctrl+`) or restart VSCode.');
+      console.error('- Ensure TERM is set (e.g. export TERM=xterm-256color).');
+      console.error('- Ensure PS1 is set by your shell startup files (.zshrc / .bashrc).');
+      console.error('- Set API key non-interactively: export OPENROUTER_API_KEY=YOUR_KEY');
+      console.error('Fallback usage (non-interactive): node bin/vibe.cjs chat "Hello world"');
+      return; // Do not proceed to interactive chat loop
+    }
+
     let selectedModel = DEFAULT_MODEL_ID;
     try {
       const apiKey = await getApiKey();
