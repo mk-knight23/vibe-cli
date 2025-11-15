@@ -9,112 +9,119 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+  packages: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
-    
     strategy:
       matrix:
         node-version: [18.x, 20.x]
-    
+
     steps:
-    - uses: actions/checkout@v3
-    
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v3
-      with:
-        node-version: ${{ matrix.node-version }}
-        cache: 'npm'
-    
-    - name: Install dependencies
-      run: npm ci
-    
-    - name: Run tests
-      run: npm test --if-present
-    
-    - name: Build package
-      run: npm pack
-    
-    - name: Upload package artifact
-      uses: actions/upload-artifact@v3
-      with:
-        name: npm-package-${{ matrix.node-version }}
-        path: vibe-cli-*.tgz
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests (if present)
+        run: npm test --if-present
+
+      - name: Build package
+        run: npm pack
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-package-${{ matrix.node-version }}
+          path: vibe-cli-*.tgz
 
   publish-npm:
     needs: build
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
-    
     steps:
-    - uses: actions/checkout@v3
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18.x'
-        registry-url: 'https://registry.npmjs.org'
-    
-    - name: Install dependencies
-      run: npm ci
-    
-    - name: Build package
-      run: npm pack
-    
-    - name: Publish to npm
-      run: npm publish
-      env:
-        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18.x'
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build package
+        run: npm pack
+
+      - name: Publish to npm
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   create-release:
     needs: build
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
-    
     steps:
-    - uses: actions/checkout@v3
-    
-    - name: Download artifacts
-      uses: actions/download-artifact@v3
-      with:
-        name: npm-package-18.x
-    
-    - name: Create Release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
-        body: |
-          ## Vibe CLI v1.0.6
-          
-          ### What's New
-          - Enhanced AI agent capabilities (improved step/context management)
-          - Specialized tools (codegen, debug, refactor, testgen, gittools, multiedit)
-          - Improved OpenRouter integration & model selection
-          - Better API key management flow
-          - Documentation consolidation (removed legacy STRUCTURE.md distribution entry)
-          - License attribution corrected to mk-knight23
-          
-          ### Installation
-          ```bash
-          npm install -g vibe-cli
-          ```
-          
-          ### Quick Start
-          ```bash
-          vibe --help
-          ```
-        draft: false
-        prerelease: false
-    
-    - name: Upload Release Asset
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./vibe-cli-1.0.6.tgz
-        asset_name: vibe-cli-1.0.6.tgz
-        asset_content_type: application/gzip
+      - uses: actions/checkout@v4
+
+      - name: Download 18.x artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: npm-package-18.x
+
+      - name: List downloaded files
+        run: ls -al
+
+      - name: Determine package file
+        id: pkg
+        run: echo "file=$(ls -1 *.tgz | head -n1)" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          body: |
+            ## Vibe CLI ${{ github.ref_name }}
+
+            ### What's New
+            - Enhanced AI agent capabilities (improved step/context management)
+            - Specialized tools (codegen, debug, refactor, testgen, gittools, multiedit)
+            - Improved OpenRouter integration & model selection
+            - Better API key management flow
+            - Documentation consolidation
+            - License attribution corrected
+
+            ### Installation
+            ```bash
+            npm install -g vibe-cli
+            ```
+
+            ### Quick Start
+            ```bash
+            vibe --help
+            ```
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.softprops_action_gh_release.outputs.upload_url || steps.create_release.outputs.upload_url }}
+          asset_path: ./${{ steps.pkg.outputs.file }}
+          asset_name: ${{ steps.pkg.outputs.file }}
+          asset_content_type: application/gzip
