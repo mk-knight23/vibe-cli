@@ -1,59 +1,57 @@
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "../components/ui/accordion";
-
-import QuickStartSection from "../components/quick-start-section";
-
-// Modular marketing sections (extracted for clarity)
+import Link from "next/link";
 import HeroSection from "../components/marketing/hero-section";
-import FeaturesSection from "../components/marketing/features-section";
-import CapabilitiesTabsSection from "../components/marketing/capabilities-tabs-section";
 import TestimonialsSection from "../components/marketing/testimonials-section";
-import PricingSection from "../components/marketing/pricing-section";
 
 /**
  * Home (Landing Page)
- * Now composed entirely of modular marketing components for clarity & maintainability.
- * FAQ remains inline due to its small size; can be extracted later if it grows.
+ * Simplified into a hub now that sections have dedicated pages.
+ * Provides quick navigation cards instead of inlined full content.
  */
+const hubLinks = [
+  { href: "/installation", title: "Install", description: "Curl, npm, Windows binary methods." },
+  { href: "/quick-start", title: "Quick Start", description: "Onboarding steps & progress tracker." },
+  { href: "/commands", title: "Commands", description: "Chat, agent, refactor, test, model ops." },
+  { href: "/features", title: "Features", description: "Core ergonomics & capability overview." },
+  { href: "/pricing", title: "Pricing", description: "Free usage model + future tiers." },
+  { href: "/docs", title: "Docs", description: "Capabilities & integration surfaces." },
+  { href: "/faq", title: "FAQ", description: "Common questions & security stance." },
+];
+
 export default function Home() {
   return (
-    <div className="container mx-auto px-4">
+    <div className="mx-auto max-w-6xl px-5 pt-12 md:pt-16 space-y-28">
       <HeroSection />
-      <QuickStartSection />
-      <FeaturesSection />
-      <CapabilitiesTabsSection />
-      <TestimonialsSection />
-      <PricingSection />
 
-      <section id="faq" className="py-20 sm:py-32">
-        <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-3xl font-bold tracking-tight text-primary sm:text-4xl font-headline">FAQ</h2>
+      <section className="relative">
+        <div className="mx-auto max-w-3xl text-center mb-12">
+          <h2 className="font-headline font-semibold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-primary via-accent to-primary text-[2.4rem] md:text-[3rem]">
+            Explore
+          </h2>
+          <p className="mt-6 text-lg leading-relaxed text-muted-foreground">
+            Navigate focused pages for installation, onboarding, command reference, features, documentation, and support.
+          </p>
         </div>
-        <div className="mt-16 max-w-3xl mx-auto">
-          <Accordion type="single" collapsible className="w-full">
-            <AccordionItem value="item-1">
-              <AccordionTrigger>Do I need a server?</AccordionTrigger>
-              <AccordionContent>No. CLI Vibe runs locally in your terminal; no backend required.</AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="item-2">
-              <AccordionTrigger>How does it use OpenRouter?</AccordionTrigger>
-              <AccordionContent>You supply your OpenRouter API key; CLI Vibe calls free/open models available via OpenRouter.</AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="item-3">
-              <AccordionTrigger>Will it change my files automatically?</AccordionTrigger>
-              <AccordionContent>No. It always asks for permission. You approve edits before they’re written.</AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="item-4">
-              <AccordionTrigger>Security stance?</AccordionTrigger>
-              <AccordionContent>Defensive-only. Refuses requests that could be used maliciously.</AccordionContent>
-            </AccordionItem>
-          </Accordion>
+
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {hubLinks.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="group relative rounded-xl border border-border/50 bg-card/60 p-5 backdrop-blur-sm glow-border ambient ease-smooth hover:-translate-y-1 hover:border-accent/50"
+            >
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <span className="inline-block h-2 w-2 rounded-full bg-gradient-to-r from-primary to-accent group-hover:scale-125 ease-smooth" />
+                {link.title}
+              </h3>
+              <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+                {link.description}
+              </p>
+            </Link>
+          ))}
         </div>
       </section>
+
+      <TestimonialsSection />
     </div>
   );
 }

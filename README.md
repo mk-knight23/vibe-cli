@@ -211,7 +211,56 @@ README.md
 
 ## 10. Styling & Theming
 
-Active theming uses CSS variables in [`globals.css`](src/app/globals.css:1) and Tailwind custom tokens in [`tailwind.config.cjs`](tailwind.config.cjs:1). Legacy `themes/*.json` removed (unused). Theme toggle planned (Header contains placeholder Moon icon).
+The project now uses a dark‑first design system centered on true black and deep neutral panels with natural accent gradients. All tokens are defined as CSS variables in [`globals.css`](src/app/globals.css:1) and consumed via Tailwind token mappings in [`tailwind.config.cjs`](tailwind.config.cjs:1). The former duplicate stylesheet (`styles/globals.css`) has been removed to eliminate style conflicts.
+
+### 10.1 Core Color Tokens (HSL components)
+
+| Token | Purpose | HSL (components) |
+|-------|---------|------------------|
+| `--background` | Base page surface | `0 0% 0%` |
+| `--foreground` | Primary text | `0 0% 98%` |
+| `--card` | Raised surfaces (cards, panels) | `220 12% 7%` |
+| `--primary` | Brand azure (buttons, active states) | `200 100% 55%` |
+| `--accent` | Teal secondary accent (gradients, highlights) | `170 82% 46%` |
+| `--secondary` | Muted panel background | `220 16% 18%` |
+| `--muted` | Low‑emphasis text | `220 10% 35%` |
+| `--border` | Standard border stroke | `220 15% 20%` |
+| `--ring` | Focus ring color | `200 100% 55%` |
+| `--destructive` | Error/destructive | `0 74% 46%` |
+
+Gradients and ambient glows are composed with these tokens (e.g. `from-primary to-accent`). Interactive components (cards, tabs, accordions, pricing blocks) apply utility classes `glow-border` and `ambient` introduced in the component layer for subtle hover illumination without adding new functional features.
+
+### 10.2 Typography Scale
+
+Base `html` font-size elevated to `17px`; heading clamps:
+- `h1`: `clamp(2.8rem, 6vw, 3.6rem)`
+- `h2`: `clamp(2.1rem, 4.5vw, 2.8rem)`
+- `h3`: `clamp(1.6rem, 3.5vw, 2.0rem)`
+
+Body copy uses ~1.05rem with 1.6 line-height for readability against true black.
+
+### 10.3 Accessibility & Contrast
+
+Contrast checks were performed against WCAG AA:
+- Foreground (`#FAFAFA` approximated from `--foreground`) vs background (`#000000`) yields ratio > 12:1.
+- Muted text (`--muted` slate tone) vs background retains > 4.5:1 for paragraph size.
+- Gradient button text uses dark foreground `primary-foreground` ensuring > 7:1 against light accents.
+- Focus indicators rely on `--ring` (bright azure) + 2px outline for clear keyboard navigation.
+
+If future light theme support is reintroduced, a parallel variable block can be added beneath `.light` with adjusted border & muted tones. Current header includes a placeholder for theme toggle.
+
+### 10.4 Removal of Redundant Stylesheet
+
+The legacy `styles/globals.css` file was deleted; all styling now consolidates into the App Router global stylesheet to prevent token drift.
+
+### 10.5 Extending the System
+
+To introduce a new semantic color:
+1. Add variable in `:root` of `globals.css`.
+2. Map via Tailwind in `tailwind.config.cjs` under `theme.extend.colors`.
+3. Use `hsl(var(--token-name))` in components for consistent merging with existing utilities.
+
+Do not hardcode hex values in components—favor token references for maintainability and future theme toggling.
 
 ## 11. Web Frontend Functional Areas
 

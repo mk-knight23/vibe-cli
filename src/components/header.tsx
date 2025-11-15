@@ -4,14 +4,17 @@ import Link from 'next/link';
 import { Github, Menu, Moon, Search } from 'lucide-react';
 import Logo from './logo';
 import { Button } from './ui/button';
-import { Sheet, SheetContent, SheetTrigger } from './ui/sheet';
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from './ui/sheet';
 import { useState } from 'react';
 
 const navLinks = [
-  { href: '#features', label: 'Features' },
-  { href: '#pricing', label: 'Pricing' },
-  { href: '#docs', label: 'Docs' },
-  { href: '#faq', label: 'FAQ' },
+  { href: '/installation', label: 'Install' },
+  { href: '/quick-start', label: 'Quick Start' },
+  { href: '/commands', label: 'Commands' },
+  { href: '/features', label: 'Features' },
+  { href: '/pricing', label: 'Pricing' },
+  { href: '/docs', label: 'Docs' },
+  { href: '/faq', label: 'FAQ' },
 ];
 
 const Header = () => {
@@ -47,6 +50,7 @@ const Header = () => {
             </SheetTrigger>
             <SheetContent side="left">
               <div className="p-4">
+                <SheetTitle className="sr-only">Main navigation</SheetTitle>
                 <Link href="/" className="mb-6 flex items-center" onClick={() => setIsMobileMenuOpen(false)}>
                   <Logo />
                 </Link>
@@ -62,6 +66,13 @@ const Header = () => {
                     </Link>
                   ))}
                 </nav>
+                <div className="mt-6 rounded-lg border border-border/40 bg-card/60 p-4 text-xs text-muted-foreground">
+                  <p className="font-medium mb-2">Sections</p>
+                  <p className="leading-relaxed">
+                    Pages are now separated for faster access and clearer structure. Use the links above to
+                    browse installation, quick start, command reference, pricing, docs, and FAQ.
+                  </p>
+                </div>
               </div>
             </SheetContent>
           </Sheet>

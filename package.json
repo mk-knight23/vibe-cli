@@ -46,7 +46,7 @@
     "release:check": "node -e \"console.log('Tag to release, e.g., v1.0.0')\"",
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node cli.cjs",
-    "dev": "next dev",
+    "dev": "node scripts/dev-port.cjs",
     "build": "next build",
     "typecheck": "tsc --noEmit"
   },
