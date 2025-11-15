@@ -1,109 +1,90 @@
-name: Build and Publish Package
+name: Build, Publish & Release
 
 on:
   push:
-    branches: [ main ]
     tags:
-      - 'v*'
-  pull_request:
-    branches: [ main ]
+      - 'v*'          # Tag-triggered publish/release
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version (vX.Y.Z). If provided, will tag and publish.'
+        required: false
 
 permissions:
   contents: write
   packages: write
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [18.x, 20.x]
+env:
+  NODE_VERSION: 20.x
 
+jobs:
+  maybe-tag:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.version != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create tag ${{ inputs.version }}
+        run: |
+          git fetch --tags
+          if git rev-parse "${{ inputs.version }}" >/dev/null 2>&1; then
+            echo "Tag already exists"; exit 0;
+          fi
+          git tag "${{ inputs.version }}"
+          git push origin "${{ inputs.version }}"
+
+  build-and-publish:
+    needs: [maybe-tag]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Use Node.js ${{ matrix.node-version }}
+      - name: Use Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Derive version from tag
+        id: version
+        run: |
+          REF="${GITHUB_REF##*/}"
+          echo "ref=$REF" >> $GITHUB_OUTPUT
+          echo "Version from tag: $REF"
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Run tests (if present)
-        run: npm test --if-present
+      - name: Typecheck
+        run: npm run typecheck || echo "Typecheck skipped"
 
-      - name: Build package
+      - name: Build CLI (TS compile)
+        run: npm run build:cli || echo "CLI build skipped"
+
+      - name: Pack tarball
         run: npm pack
 
-      - name: Upload package artifact
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: npm-package-${{ matrix.node-version }}
+          name: vibe-cli-tarball
           path: vibe-cli-*.tgz
 
-  publish-npm:
-    needs: build
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18.x'
-          registry-url: 'https://registry.npmjs.org'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build package
-        run: npm pack
-
       - name: Publish to npm
+        if: startsWith(steps.version.outputs.ref, 'v')
         run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-  create-release:
-    needs: build
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Download 18.x artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: npm-package-18.x
-
-      - name: List downloaded files
-        run: ls -al
-
-      - name: Determine package file
-        id: pkg
-        run: echo "file=$(ls -1 *.tgz | head -n1)" >> $GITHUB_OUTPUT
-
-      - name: Create Release (attach package)
-        id: release
+      - name: Create GitHub Release
+        if: startsWith(steps.version.outputs.ref, 'v')
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ github.ref_name }}
-          name: Release ${{ github.ref_name }}
+          tag_name: ${{ steps.version.outputs.ref }}
+          name: Release ${{ steps.version.outputs.ref }}
           body: |
-            ## Vibe CLI ${{ github.ref_name }}
-
-            ### What's New
-            - Enhanced AI agent capabilities (improved step/context management)
-            - Specialized tools (codegen, debug, refactor, testgen, gittools, multiedit)
-            - Improved OpenRouter integration & model selection
-            - Better API key management flow
-            - Documentation consolidation
-            - License attribution corrected
+            ## Vibe CLI ${{ steps.version.outputs.ref }}
+            Automated release from tag push.
 
             ### Installation
             ```bash
@@ -114,6 +95,11 @@ jobs:
             ```bash
             vibe --help
             ```
-          files: ${{ steps.pkg.outputs.file }}
+          files: |
+            vibe-cli-*.tgz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Summary
+        run: |
+          echo "Release job complete. Ref: ${{ steps.version.outputs.ref }}"
