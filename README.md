@@ -393,6 +393,57 @@ MIT License — see [`LICENSE`](LICENSE:1)
 - Free usage maximized with model rotation
 - Zero telemetry; privacy-first
 
+## 29. VS Code Extension (Vibe VS Code)
+
+A companion VS Code extension **“Vibe VS Code”** lives in the [`vscode-extension`](vscode-extension/README.md:1) subdirectory. It exposes Vibe’s chat/agent experience directly inside VS Code with multiple modes and personas, powered by OpenRouter.
+
+### 29.1 Install from VSIX (recommended during preview)
+
+1. Download the latest VSIX
+   - Go to the repository releases page:
+     `https://github.com/mk-knight23/vibe-cli/releases`
+   - Download the asset named like:
+     `vibe-vscode-0.0.1.vsix` (or newer).
+2. Install the VSIX in VS Code
+   - Open **Command Palette** → `Extensions: Install from VSIX...`
+   - Select the downloaded `vibe-vscode-*.vsix` file.
+3. Configure your OpenRouter API key
+   - Open **Settings** → search for `vibe`
+   - Set `vibe.openrouterApiKey` to your `sk-or-...` key.
+   - Optionally adjust:
+     - `vibe.defaultModel` (default `z-ai/glm-4.5-air:free`)
+     - `vibe.autoApproveUnsafeOps`
+     - `vibe.maxContextFiles`
+4. Open the Vibe panel in VS Code
+   - Command Palette → `Vibe: Open Chat`
+   - Or `Vibe: Open Agent Panel` for the agent-focused UI.
+   - Use:
+     - **⌘ + .** / **Ctrl + .** for next mode
+     - **⌘ + ⇧ + .** / **Ctrl + ⇧ + .** for previous mode.
+
+### 29.2 Build the extension from source
+
+If you prefer to build the VSIX yourself:
+
+```bash
+cd vscode-extension
+npm install
+npm run compile
+npx @vscode/vsce package
+```
+
+This produces `vibe-vscode-*.vsix` in [`vscode-extension`](vscode-extension/README.md:1), which you can install via **“Extensions: Install from VSIX...”** as described above.
+
+### 29.3 Extension source layout
+
+Key extension files:
+
+- Backend entry: [`vscode-extension/src/extension.ts`](vscode-extension/src/extension.ts:1)
+- Extension-specific docs: [`vscode-extension/README.md`](vscode-extension/README.md:1)
+- Extension manifest: [`vscode-extension/package.json`](vscode-extension/package.json:1)
+
+The extension is designed to be published to the VS Code Marketplace under the `mk-knight23` publisher once it is stable.
+
 ---
 
 This single README supersedes prior documentation files (SUMMARY.md, STRUCTURE.md, ENHANCEMENT_PLAN.md, README_WEB.md, CHANGELOG.md). All removed to reduce redundancy and maintenance cost.
